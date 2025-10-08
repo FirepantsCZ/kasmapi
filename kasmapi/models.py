@@ -10,6 +10,9 @@ from kasmapi.exceptions import UsageQuotaReachedError
 if TYPE_CHECKING:
     from kasmapi.kasm import Kasm
 
+# TODO: Add a @check_permissions decorator
+#   to generate pretty errors if needed permissions are not met.
+#   relevant endpoints are: /get_permissions and /get_permissions_group
 
 class KasmObject(BaseModel):
     _kasm: Kasm = PrivateAttr()
@@ -33,7 +36,7 @@ class Setting(KasmObject):
     value: str | int
 
     # TODO: Move _get_json to KasmObject and maybe rename it and change to public?
-    # Either way, find a better way to do this
+    #   Either way, find a better way to do this
     def set_value(self, value: str | int) -> None:
         # print(f"setting value of '{self.name}' to {value}")
         update_resp = requests.post(
