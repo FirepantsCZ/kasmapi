@@ -33,6 +33,10 @@ def main() -> None:
     # Display list
     print("\nAvailable sessions:")
     for i, s in enumerate(sessions, 1):
+        # TODO: Find out if expiration_date is actually updated on keepalive()
+        # or if there is just some problem with TZ's
+        # print(datetime.strptime(s.expiration_date, "%Y-%m-%d %H:%M:%S.%f"))
+
         print(
             f"[{i}] {s.start_date} - {s.image.friendly_name} (state: {s.operational_status})",
         )
@@ -69,7 +73,7 @@ def main() -> None:
 
     keepalive_setting.set_value(old_keepalive)
 
-    print("✅ Session expiration updated successfully!")
+    print("\n✅ Session expiration updated successfully!")
 
 
 if __name__ == "__main__":

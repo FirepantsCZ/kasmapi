@@ -32,6 +32,8 @@ class Setting(KasmObject):
     name: str
     value: str | int
 
+    # TODO: Move _get_json to KasmObject and maybe rename it and change to public?
+    # Either way, find a better way to do this
     def set_value(self, value: str | int) -> None:
         # print(f"setting value of '{self.name}' to {value}")
         update_resp = requests.post(
@@ -60,6 +62,7 @@ class Session(KasmObject):
     operational_status: str
     user_id: str
     username: str
+    expiration_date: str
 
     def keepalive(self) -> None:
         update_resp = requests.post(
