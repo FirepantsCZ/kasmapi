@@ -1,8 +1,9 @@
-from dotenv import load_dotenv
 from os import getenv
 from zoneinfo import ZoneInfo
 
-from kasmapi.exceptions import UsageQuotaReachedException
+from dotenv import load_dotenv
+
+from kasmapi.exceptions import UsageQuotaReachedError
 from kasmapi.kasm import Kasm
 
 TIMEZONE = ZoneInfo("Europe/Prague")
@@ -14,9 +15,14 @@ BASE_URL = "https://kasm.krabice.online"  # e.g. https://kasm.example.com
 API_KEY = getenv("API_KEY")
 API_KEY_SECRET = getenv("API_KEY_SECRET")
 
-kasm = Kasm(BASE_URL, API_KEY, API_KEY_SECRET)
 
-def main():
+def main() -> None:
+    if BASE_URL and API_KEY and API_KEY_SECRET:
+        kasm = Kasm(BASE_URL, API_KEY, API_KEY_SECRET)
+    else:
+        print("Incorrect API configuration.")
+        return
+
     # Fetch sessions
     sessions = kasm.get_sessions()
 
@@ -27,9 +33,11 @@ def main():
     # Display list
     print("\nAvailable sessions:")
     for i, s in enumerate(sessions, 1):
-        print(f"[{i}] {s.start_date} - {s.image.friendly_name} (state: {s.operational_status})")
+        print(
+            f"[{i}] {s.start_date} - {s.image.friendly_name} (state: {s.operational_status})",
+        )
 
-    choice = input(f"\nSelect session to extend (number)[1]: ")
+    choice = input("\nSelect session to extend (number)[1]: ")
     session = sessions[int(choice) - 1 if choice else 0]
 
     # Get the user of chosen session
@@ -37,17 +45,24 @@ def main():
 
     # Fetch default session expiration time
     keepalive_setting = user_group.get_setting("keepalive_expiration")
+
+    if not keepalive_setting:
+        print("ERROR: Could not find keepalive_expiration setting.")
+        return
+
     old_keepalive = keepalive_setting.value
 
     # Ask how many hours to extend
     extra_hours = input(f"New expiration time (in hours)[{DEFAULT_HOURS}]: ")
 
-    keepalive_setting.set_value((int(extra_hours) if extra_hours else DEFAULT_HOURS) * 60 * 60)
+    keepalive_setting.set_value(
+        (int(extra_hours) if extra_hours else DEFAULT_HOURS) * 60 * 60,
+    )
 
     # Reset keepalive for session
     try:
         session.keepalive()
-    except UsageQuotaReachedException:
+    except UsageQuotaReachedError:
         print("ERROR: Session not modified, usage quota reached!")
         keepalive_setting.set_value(old_keepalive)
         return
@@ -55,6 +70,7 @@ def main():
     keepalive_setting.set_value(old_keepalive)
 
     print("✅ Session expiration updated successfully!")
+
 
 if __name__ == "__main__":
     main()

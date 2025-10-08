@@ -1,2 +1,2 @@
-class UsageQuotaReachedException(Exception):
+class UsageQuotaReachedError(Exception):
     pass
