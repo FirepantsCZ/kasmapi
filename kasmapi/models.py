@@ -6,6 +6,7 @@ import requests
 from pydantic import BaseModel, PrivateAttr
 
 from kasmapi.exceptions import UsageQuotaReachedError
+from kasmapi.utils import Permissions, check_permissions
 
 if TYPE_CHECKING:
     from kasmapi.kasm import Kasm
@@ -52,7 +53,6 @@ class Setting(KasmObject):
                     },
                 },
             ),
-            verify=True,
         )
         update_resp.raise_for_status()
         self.value = value
@@ -67,16 +67,31 @@ class Session(KasmObject):
     username: str
     expiration_date: str
 
+    @check_permissions([
+        Permissions.USER,
+        Permissions.USER_AUTH_SESSION,
+    ])
     def keepalive(self) -> None:
         update_resp = requests.post(
             f"{self._kasm.kasm_url}/api/public/keepalive",
             json=self._kasm._get_json({"kasm_id": self.kasm_id}),
-            verify=True,
         )
         update_resp.raise_for_status()
 
         if update_resp.json()["usage_reached"]:
             raise UsageQuotaReachedError
+
+    @check_permissions([
+        Permissions.USER,
+        Permissions.USER_AUTH_SESSION,
+    ])
+    def destroy(self) -> None:
+        response = requests.post(
+            f"{self._kasm.kasm_url}/api/public/destroy_kasm",
+            json=self._kasm._get_json({"kasm_id": self.kasm_id, "user_id": self.user_id}),
+        )
+        response.raise_for_status()
+        # TODO: Check for error in response
 
 
 class Group(KasmObject):
@@ -106,3 +121,21 @@ class User(KasmObject):
         user.groups = [Group.from_api(group, kasm) for group in data["groups"]]
         user._kasm = kasm
         return user
+
+class ApiConfig(KasmObject):
+    api_id: str
+    name: str
+    api_key: str
+    enabled: bool
+    read_only: bool
+    created: str
+    last_used: str
+    expires: str | None
+
+
+class Permission(KasmObject):
+    group_permission_id: str
+    group_id: str | None
+    permission_name: str
+    permission_description: str
+    permission_id: int | None

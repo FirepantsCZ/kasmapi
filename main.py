@@ -34,8 +34,8 @@ def main() -> None:
     print("\nAvailable sessions:")
     for i, s in enumerate(sessions, 1):
         # TODO: Find out if expiration_date is actually updated on keepalive()
-        # or if there is just some problem with TZ's
-        # print(datetime.strptime(s.expiration_date, "%Y-%m-%d %H:%M:%S.%f"))
+        #   or if there is just some problem with TZ's
+        #   print(datetime.strptime(s.expiration_date, "%Y-%m-%d %H:%M:%S.%f"))
 
         print(
             f"[{i}] {s.start_date} - {s.image.friendly_name} (state: {s.operational_status})",
@@ -77,4 +77,8 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nGoodbye!")
+        exit()
