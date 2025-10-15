@@ -4,6 +4,9 @@ Exposes the Kasm class, a lightweight wrapper around selected public and
 admin endpoints that returns strongly typed model objects.
 """
 
+# TODO: REPLACE ALL USAGES OF requests.post/get() WITH _get_model(s)()
+# TODO: Add unit tests
+
 import json
 from collections.abc import Mapping
 from typing import Any

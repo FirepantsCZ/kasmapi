@@ -51,6 +51,8 @@ def check_permissions(
                     _kasm.get_api_configs(),
                 )
             )
+
+            # TODO: Refactor to use sets
             current_permissions = [
                 permission.permission_name
                 for permission in _kasm.get_permissions_group(api_config)
@@ -65,6 +67,10 @@ def check_permissions(
                 raise ApiPermissionError(msg)
 
             return function(*args, **kwargs)
+
+            # TODO: Maybe perform error check on function,
+            #   since we know the error structure
+            #   we could generate custom messages.
 
         return wrapper
 
