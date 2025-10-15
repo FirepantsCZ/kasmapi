@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Self
+from uuid import UUID
 
 import requests
 from pydantic import BaseModel, PrivateAttr
 
 from kasmapi.exceptions import UsageQuotaReachedError
 from kasmapi.utils import Permissions, check_permissions
-from uuid import UUID
 
 if TYPE_CHECKING:
     from kasmapi.kasm import Kasm
@@ -21,6 +21,11 @@ class KasmObject(BaseModel):
         instance = cls.model_validate(data)
         instance._kasm = kasm
         return instance
+
+    def __init_subclass__(cls, name: str | None = None, **kwargs):
+        super().__init_subclass__(**kwargs)
+        if name:
+            cls.__name__ = name
 
 
 class Image(KasmObject):
@@ -57,7 +62,7 @@ class Setting(KasmObject):
         self.value = value
 
 
-class Session(KasmObject):
+class Session(KasmObject, name="Kasm"):
     kasm_id: UUID
     start_date: str
     image: Image
@@ -76,10 +81,12 @@ class Session(KasmObject):
     # So for now, just leave it to the user to get the User from a Session
     # using Kasm.get_user()
 
-    @check_permissions([
-        Permissions.USER,
-        Permissions.USER_AUTH_SESSION,
-    ])
+    @check_permissions(
+        [
+            Permissions.USER,
+            Permissions.USER_AUTH_SESSION,
+        ]
+    )
     def keepalive(self) -> None:
         update_resp = requests.post(
             f"{self._kasm.kasm_url}/api/public/keepalive",
@@ -90,14 +97,18 @@ class Session(KasmObject):
         if update_resp.json()["usage_reached"]:
             raise UsageQuotaReachedError
 
-    @check_permissions([
-        Permissions.USER,
-        Permissions.USER_AUTH_SESSION,
-    ])
+    @check_permissions(
+        [
+            Permissions.USER,
+            Permissions.USER_AUTH_SESSION,
+        ]
+    )
     def destroy(self) -> None:
         response = requests.post(
             f"{self._kasm.kasm_url}/api/public/destroy_kasm",
-            json=self._kasm._get_json({"kasm_id": self.kasm_id.hex, "user_id": self.user_id.hex}),
+            json=self._kasm._get_json(
+                {"kasm_id": self.kasm_id.hex, "user_id": self.user_id.hex}
+            ),
         )
         response.raise_for_status()
         # TODO: Check for error in response
@@ -131,36 +142,45 @@ class User(KasmObject):
         user._kasm = kasm
         return user
 
-    @check_permissions([
-        Permissions.USER,
-        Permissions.USER_AUTH_SESSION,
-    ])
-    def request_session(self, image: Image, enable_sharing: bool = False, environment: dict[str, str] | None= None) -> Session:
+    @check_permissions(
+        [
+            Permissions.USER,
+            Permissions.USER_AUTH_SESSION,
+        ]
+    )
+    def request_session(
+        self,
+        image: Image,
+        enable_sharing: bool = False,
+        environment: dict[str, str] | None = None,
+    ) -> Session:
         response = requests.post(
             f"{self._kasm.kasm_url}/api/public/request_kasm",
-            json=self._kasm._get_json({
-                "user_id": self.user_id.hex,
-                "image_id": image.image_id.hex,
-                "enable_sharing": enable_sharing,
-                "environment": environment,
-            }),
+            json=self._kasm._get_json(
+                {
+                    "user_id": self.user_id.hex,
+                    "image_id": image.image_id.hex,
+                    "enable_sharing": enable_sharing,
+                    "environment": environment,
+                }
+            ),
         )
         response.raise_for_status()
-        print(response.json())
         # TODO: Return tuple of Session, SessionToken and maybe something else?
-        return self.get_session(response.json()['kasm_id'])
-
+        return self.get_session(response.json()["kasm_id"])
 
     def get_session(self, session_id: str) -> Session:
         response = requests.post(
             f"{self._kasm.kasm_url}/api/public/get_kasm_status",
-            json=self._kasm._get_json({
-                "kasm_id": session_id,
-                "user_id": self.user_id.hex,
-            }),
+            json=self._kasm._get_json(
+                {
+                    "kasm_id": session_id,
+                    "user_id": self.user_id.hex,
+                }
+            ),
         )
         response.raise_for_status()
-        return Session.from_api(response.json()['kasm'], self._kasm)
+        return Session.from_api(response.json()["kasm"], self._kasm)
 
 
 class ApiConfig(KasmObject):
