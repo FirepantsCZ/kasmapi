@@ -1,8 +1,11 @@
 from typing import Any, Iterable
+import json
 
 import requests
 
-from kasmapi.models import Session, Setting, User, ApiConfig, Permission
+from kasmapi.models import Session, Setting, User, ApiConfig, Permission, Image
+from kasmapi.utils import check_permissions, Permissions
+
 
 class Kasm:
     def __init__(self, kasm_url: str, api_key: str, api_key_secret: str):
@@ -10,6 +13,7 @@ class Kasm:
         self.api_key = api_key
         self.api_key_secret = api_key_secret
 
+    # TODO: Change all ids to UUIDs
     def get_user(self, user_id: str, user_name: str) -> User:
         response = requests.post(
             f"{self.kasm_url}/api/public/get_user",
@@ -24,6 +28,17 @@ class Kasm:
         )
         response.raise_for_status()
         return User.from_api(response.json()["user"], self)
+
+    @check_permissions([
+        Permissions.USERS_VIEW
+    ])
+    def get_users(self) -> list[User]:
+        response = requests.post(
+            f"{self.kasm_url}/api/public/get_users",
+            json=self._get_json(),
+        )
+        response.raise_for_status()
+        return [User.from_api(user, self) for user in response.json()["users"]]
 
     def _get_json(self, request_json: dict[str, Any] | None = None) -> dict[str, Any]:
         result = {
@@ -44,6 +59,18 @@ class Kasm:
             Setting.from_api(setting, self) for setting in response.json()["settings"]
         ]
 
+    @check_permissions([
+        Permissions.IMAGES_VIEW,
+    ])
+    def get_images(self) -> list[Image]:
+        response = requests.post(
+            f"{self.kasm_url}/api/public/get_images",
+            json=self._get_json(),
+            #headers={"Content-Type": "application/json"},
+        )
+        response.raise_for_status()
+        return [Image.from_api(image, self) for image in response.json()["images"]]
+
     def get_api_configs(self) -> list[ApiConfig]:
         response = requests.post(
             f"{self.kasm_url}/api/admin/get_api_configs",
@@ -56,7 +83,7 @@ class Kasm:
     def get_permissions_group(self, target_api_config: ApiConfig) -> list[Permission]:
         response = requests.post(
             f"{self.kasm_url}/api/admin/get_permissions_group",
-            json=self._get_json({"target_api_config": target_api_config.model_dump()}),
+            json=self._get_json({"target_api_config": json.loads(target_api_config.model_dump_json())}),
         )
         response.raise_for_status()
         return [Permission.from_api(api_config, self) for api_config in response.json()['permissions']]

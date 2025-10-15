@@ -45,7 +45,7 @@ def main() -> None:
     session = sessions[int(choice) - 1 if choice else 0]
 
     # Get the user of chosen session
-    user_group = kasm.get_user(session.user_id, session.username).groups[0]
+    user_group = kasm.get_user(session.user_id.hex, session.username).groups[0]
 
     # Fetch default session expiration time
     keepalive_setting = user_group.get_setting("keepalive_expiration")
