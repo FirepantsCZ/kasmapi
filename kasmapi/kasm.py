@@ -214,6 +214,7 @@ class Kasm:
         response = requests.post(
             f"{self.kasm_url}/api/admin/get_settings_group",
             json=self._get_json({"target_group": {"group_id": group_id}}),
+            timeout=REQUEST_TIMEOUT,
         )
         response.raise_for_status()
         return [
@@ -240,6 +241,7 @@ class Kasm:
         response = requests.post(
             f"{self.kasm_url}/api/public/get_images",
             json=self._get_json(),
+            timeout=REQUEST_TIMEOUT,
         )
         response.raise_for_status()
         return [Image.from_api(image, self) for image in response.json()["images"]]
@@ -257,6 +259,7 @@ class Kasm:
             f"{self.kasm_url}/api/admin/get_api_configs",
             json=self._get_json(),
             headers={"Content-Type": "application/json"},
+            timeout=REQUEST_TIMEOUT,
         )
         response.raise_for_status()
         return [
@@ -281,6 +284,7 @@ class Kasm:
             json=self._get_json(
                 {"target_api_config": json.loads(target_api_config.model_dump_json())}
             ),
+            timeout=REQUEST_TIMEOUT,
         )
         response.raise_for_status()
         return [

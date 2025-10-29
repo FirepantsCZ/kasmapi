@@ -26,24 +26,48 @@ class Permissions(Enum):
 def check_permissions(
     required_permissions: Iterable[Permissions],
 ) -> Callable[[Callable[PParams, RReturn]], Callable[PParams, RReturn]]:
+    """Decorator to check permissions.
+
+    The decorated function should be an API call.
+    The permissions given as the argument
+    will be checked when the function is called.
+
+    Credentials from the inner Kasm object will be used.
+    This means that functions using this decorator
+    must take self as their first argument,
+    and a Kasm instance must be available as self._kasm.
+
+    Args:
+        required_permissions: The API permissions required
+        to call the decorated function.
+
+    Returns:
+        The decorated function.
+    """
+
     def decorator(function: Callable[PParams, RReturn]) -> Callable[PParams, RReturn]:
         @wraps(function)
         def wrapper(*args: PParams.args, **kwargs: PParams.kwargs) -> RReturn:
+            # TODO: Implement caching system
             from kasmapi.kasm import Kasm
 
             if not args:
-                raise RuntimeError(
-                    "ERROR: Decorated method called without arguments, cannot find 'self'."
+                msg = (
+                    "ERROR: Decorated method called without arguments, "
+                    "cannot find 'self'."
                 )
+                raise RuntimeError(msg)
             self = args[0]  # assumes the first arg is `self`
 
             _kasm: Kasm | None = getattr(self, "_kasm", None) or (
                 self if isinstance(self, Kasm) else None
             )
             if _kasm is None:
-                raise RuntimeError(
-                    "ERROR: No _kasm instance found in object, something is seriously wrong."
+                msg = (
+                    "ERROR: No _kasm instance found in object, "
+                    "something is seriously wrong."
                 )
+                raise RuntimeError(msg)
 
             api_config: ApiConfig = next(
                 filter(

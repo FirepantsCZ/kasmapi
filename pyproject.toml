@@ -28,7 +28,9 @@ ignore = [
     "COM812",
     "FIX002",
     "TD002",
-    "TD003"
+    "TD003",
+    "FBT001",
+    "FBT002",
 ]
 
 [tool.ruff.lint.pydocstyle]
